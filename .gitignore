@@ -1,0 +1,62 @@
+# ===========================
+# Logs
+# ===========================
+logs
+*.log
+npm-debug.log*
+
+# ===========================
+# Node Modules
+# ===========================
+node_modules/
+
+# ===========================
+# Build Outputs
+# ===========================
+dist/
+build/
+
+# ===========================
+# Environment Files
+# ===========================
+.env
+.env.*
+!.env.example
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+
+# ===========================
+# OS / Editor Ignored Files
+# ===========================
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Windows dump files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Vim / temp files
+*.swp
+*.swo
+temp/
+tmp/
+
+# ===========================
+# Test / Coverage
+# ===========================
+coverage/
+*.lcov
+
+# ===========================
+# ESLint / Prettier Cache
+# ===========================
+.eslintcache
+.prettier-cache/
