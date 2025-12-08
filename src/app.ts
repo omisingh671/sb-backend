@@ -58,10 +58,12 @@ const apiRouter = Router();
 import authRoutes from "./features/auth/auth.routes";
 import spacesRoutes from "./features/spaces/spaces.routes";
 import bookingsRoutes from "./features/bookings/bookings.routes";
+import adminUsersRoutes from "./features/admin/users.routes";
 
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/spaces", spacesRoutes);
 apiRouter.use("/bookings", bookingsRoutes);
+apiRouter.use("/admin/users", adminUsersRoutes);
 
 // For now, provide a small example endpoint to demonstrate auth-protected route placeholder
 apiRouter.get("/public", (_req: Request, res: Response) => {
