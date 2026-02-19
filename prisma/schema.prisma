@@ -1,0 +1,339 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  GUEST
+}
+
+enum PropertyStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum UnitStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum RoomStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+/**
+ * =========================
+ * USER & AUTH
+ * =========================
+ */
+
+model User {
+  id       String @id @default(uuid())
+  fullName String
+  email    String @unique
+
+  countryCode   String? @db.VarChar(8)
+  contactNumber String? @db.VarChar(20)
+
+  passwordHash String
+  role         UserRole @default(GUEST)
+
+  sessions    Session[]
+  resetTokens PasswordResetToken[]
+  bookings    Booking[]
+  quotes      QuoteRequest[]
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  ip           String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
+}
+
+/**
+ * =========================
+ * INVENTORY
+ * =========================
+ */
+
+model Property {
+  id      String @id @default(uuid())
+  name    String
+  address String
+  city    String
+  state   String
+
+  isActive Boolean        @default(true)
+  status   PropertyStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  units     Unit[]
+  amenities PropertyAmenity[]
+
+  @@unique([name, city, state])
+  @@map("properties")
+}
+
+model Unit {
+  id         String @id @default(uuid())
+  propertyId String
+  unitNumber String
+  floor      Int
+
+  isActive Boolean    @default(true)
+  status   UnitStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  property  Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  rooms     Room[]
+  pricing   RoomPricing[]
+  amenities UnitAmenity[]
+
+  @@unique([propertyId, unitNumber])
+  @@index([propertyId])
+  @@map("units")
+}
+
+model Room {
+  id           String  @id @default(uuid())
+  unitId       String
+  roomNumber   String
+  hasAC        Boolean
+  maxOccupancy Int
+
+  isActive Boolean    @default(true)
+  status   RoomStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  unit      Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  pricing   RoomPricing[]
+  amenities RoomAmenity[]
+
+  @@unique([unitId, roomNumber])
+  @@index([unitId])
+  @@map("rooms")
+}
+
+/**
+ * =========================
+ * PRODUCTS & PRICING
+ * =========================
+ */
+
+enum RoomProductCategory {
+  NIGHTLY
+  LONG_STAY
+  CORPORATE
+}
+
+enum BookingTargetType {
+  ROOM
+  UNIT
+}
+
+model RoomProduct {
+  id        String              @id @default(uuid())
+  name      String
+  occupancy Int
+  hasAC     Boolean
+  category  RoomProductCategory
+  createdAt DateTime            @default(now())
+
+  pricing RoomPricing[]
+  quotes  QuoteRequest[]
+
+  @@map("room_products")
+}
+
+model RoomPricing {
+  id        String    @id @default(uuid())
+  roomId    String?
+  unitId    String?
+  productId String
+  price     Decimal
+  validFrom DateTime
+  validTo   DateTime?
+  createdAt DateTime  @default(now())
+
+  room    Room?       @relation(fields: [roomId], references: [id], map: "fk_room_pricing_room")
+  unit    Unit?       @relation(fields: [unitId], references: [id], map: "fk_room_pricing_unit")
+  product RoomProduct @relation(fields: [productId], references: [id], map: "fk_room_pricing_product")
+
+  @@map("room_pricing")
+}
+
+/**
+ * =========================
+ * QUOTES & BOOKINGS
+ * =========================
+ */
+
+model QuoteRequest {
+  id         String            @id @default(uuid())
+  userId     String
+  productId  String
+  targetType BookingTargetType
+  unitId     String?
+  roomId     String?
+
+  checkIn  DateTime
+  checkOut DateTime
+  status   String
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User        @relation(fields: [userId], references: [id], map: "fk_quote_user")
+  product RoomProduct @relation(fields: [productId], references: [id], map: "fk_quote_product")
+
+  @@index([userId])
+  @@map("quote_requests")
+}
+
+model Booking {
+  id         String            @id @default(uuid())
+  userId     String
+  productId  String
+  targetType BookingTargetType
+  unitId     String?
+  roomId     String?
+
+  targetLabel   String
+  productName   String
+  pricePerNight Decimal
+
+  checkIn     DateTime
+  checkOut    DateTime
+  status      String
+  totalAmount Decimal
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], map: "fk_booking_user")
+
+  @@index([userId])
+  @@map("bookings")
+}
+
+/**
+ * =========================
+ * AMENITIES
+ * =========================
+ */
+
+model Amenity {
+  id   String  @id @default(uuid())
+  name String  @unique
+  icon String?
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  propertyAmenities PropertyAmenity[]
+  unitAmenities     UnitAmenity[]
+  roomAmenities     RoomAmenity[]
+
+  @@map("amenities")
+}
+
+model PropertyAmenity {
+  propertyId String
+  amenityId  String
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade, map: "fk_property_amenity_property")
+  amenity  Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade, map: "fk_property_amenity_amenity")
+
+  @@id([propertyId, amenityId])
+  @@map("property_amenities")
+}
+
+model UnitAmenity {
+  unitId    String
+  amenityId String
+
+  unit    Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade, map: "fk_unit_amenity_unit")
+  amenity Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade, map: "fk_unit_amenity_amenity")
+
+  @@id([unitId, amenityId])
+  @@map("unit_amenities")
+}
+
+model RoomAmenity {
+  roomId    String
+  amenityId String
+
+  room    Room    @relation(fields: [roomId], references: [id], onDelete: Cascade, map: "fk_room_amenity_room")
+  amenity Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade, map: "fk_room_amenity_amenity")
+
+  @@id([roomId, amenityId])
+  @@map("room_amenities")
+}
+
+/**
+ * =========================
+ * ENQUIRIES
+ * =========================
+ */
+
+model Enquiry {
+  id            String @id @default(uuid())
+  name          String
+  email         String
+  contactNumber String
+  message       String
+
+  source String?
+  status String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("enquiries")
+}

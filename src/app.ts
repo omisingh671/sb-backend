@@ -1,96 +1,112 @@
-import express, { Request, Response, NextFunction } from "express";
-import cors from "cors";
+import express, {
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import cookieParser from "cookie-parser";
-import { json } from "body-parser";
-import path from "path";
+import cors from "cors";
 
-const app = express();
+import { env } from "@/config/env.js";
 
-// Basic environment config
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
-const API_PREFIX = process.env.API_PREFIX ?? "/api";
+import { ZodError } from "zod";
+import { HttpError } from "@/common/errors/http-error.js";
 
-// Middleware
-app.use(json());
-app.use(cookieParser());
+// Routers (ALL default exports)
+import authRouter from "@/modules/auth/auth.routes.js";
+import usersRouter from "@/modules/users/users.routes.js";
+import { propertiesRouter } from "@/modules/properties/index.js";
+import { amenitiesRouter } from "@/modules/amenities/index.js";
 
-// CORS: allow frontend origin and credentials (HttpOnly refresh cookie)
+const API_PREFIX = env.API_PREFIX;
+
+export const app = express();
+
+/**
+ * --------------------------------------------------
+ * CORS (MUST be first)
+ * --------------------------------------------------
+ */
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin like mobile apps or curl
-      if (!origin) return callback(null, true);
-      if (Array.isArray(FRONTEND_ORIGIN)) {
-        // support comma-separated env value
-        const allowed = FRONTEND_ORIGIN.flatMap((o: string) =>
-          o ? o.split(",") : []
-        );
-        return callback(null, allowed.includes(origin));
-      }
-      // single origin
-      return callback(null, origin === FRONTEND_ORIGIN);
-    },
+    origin: "http://localhost:5173",
     credentials: true,
-    exposedHeaders: ["Authorization"],
-  })
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-app-name"],
+  }),
 );
 
-// Simple request logging in dev
-if (process.env.NODE_ENV !== "production") {
-  app.use((req: Request, _res: Response, next: NextFunction) => {
-    console.log(
-      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`
-    );
-    next();
-  });
-}
+/**
+ * --------------------------------------------------
+ * Global Middlewares
+ * --------------------------------------------------
+ */
+app.use(express.json());
+app.use(cookieParser());
 
-// Health-check route
+/**
+ * --------------------------------------------------
+ * Health Check
+ * --------------------------------------------------
+ */
 app.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", uptime: process.uptime() });
+  res.json({ status: "ok" });
 });
 
-// API router placeholder
-import { Router } from "express";
-const apiRouter = Router();
+/**
+ * --------------------------------------------------
+ * API Routes
+ * --------------------------------------------------
+ */
+app.use(`${API_PREFIX}/auth`, authRouter);
+app.use(`${API_PREFIX}/users`, usersRouter);
+app.use(`${API_PREFIX}/properties`, propertiesRouter);
+app.use(`${API_PREFIX}/amenities`, amenitiesRouter);
 
-// Mount auth routes
-import authRoutes from "./features/auth/auth.routes";
-import spacesRoutes from "./features/spaces/spaces.routes";
-import bookingsRoutes from "./features/bookings/bookings.routes";
-
-apiRouter.use("/auth", authRoutes);
-apiRouter.use("/spaces", spacesRoutes);
-apiRouter.use("/bookings", bookingsRoutes);
-
-// For now, provide a small example endpoint to demonstrate auth-protected route placeholder
-apiRouter.get("/public", (_req: Request, res: Response) => {
-  res.json({ message: "Public endpoint - welcome" });
-});
-
-// Example protected route placeholder (middleware to be implemented later)
-apiRouter.get("/protected", (req: Request, res: Response) => {
-  res
-    .status(401)
-    .json({ message: "Protected resource - authentication required" });
-});
-
-app.use(API_PREFIX, apiRouter);
-
-// Basic 404 handler
+/**
+ * --------------------------------------------------
+ * 404 Handler
+ * --------------------------------------------------
+ */
 app.use((_req: Request, res: Response) => {
-  res.status(404).json({ message: "Not Found" });
+  res.status(404).json({
+    error: {
+      code: "NOT_FOUND",
+      message: "Route not found",
+    },
+  });
 });
 
-// Central error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error("Unhandled error:", err);
-  const status = err.status ?? 500;
-  const body = {
-    message: err.message ?? "Internal Server Error",
-    ...(process.env.NODE_ENV !== "production" ? { stack: err.stack } : {}),
-  };
-  res.status(status).json(body);
-});
+/**
+ * --------------------------------------------------
+ * Global Error Handler
+ * --------------------------------------------------
+ */
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
 
-export default app;
+  if (err instanceof HttpError) {
+    return res.status(err.statusCode).json({
+      error: {
+        code: err.code,
+        message: err.message,
+      },
+    });
+  }
+
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid request data",
+        details: err.issues,
+      },
+    });
+  }
+
+  res.status(500).json({
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Something went wrong",
+    },
+  });
+});

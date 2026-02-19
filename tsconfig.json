@@ -1,17 +1,35 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020"],
-    "rootDir": "src",
-    "outDir": "dist",
+    /* Environment */
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+
+    /* Strictness */
     "strict": true,
-    "esModuleInterop": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* ESM correctness */
+    "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true,
+
+    /* Node globals */
+    "types": ["node"],
+
+    /* Path aliases */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    /* Debug */
+    "sourceMap": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "types": ["node", "express"]
+
+    /* IMPORTANT — typecheck only */
+    "noEmit": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+
+  "include": ["src", "scripts", "prisma"]
 }

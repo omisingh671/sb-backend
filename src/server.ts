@@ -1,32 +1,27 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "dotenv/config";
 
-import http from "http";
-import app from "./app";
+import { app } from "./app.js";
+import { prisma } from "@/db/prisma.js";
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+const PORT = Number(process.env.PORT) || 3000;
 
-const server = http.createServer(app);
-
-server.listen(PORT, () => {
-  console.log(`🚀 Backend server listening on port ${PORT}`);
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`  - Environment: ${process.env.NODE_ENV ?? "development"}`);
-  }
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
-// Graceful shutdown
-const shutdown = (signal: string) => {
-  console.info(`\n🛑 Received ${signal}. Closing server...`);
-  server.close((err?: Error) => {
-    if (err) {
-      console.error("Error while closing server:", err);
-      process.exit(1);
-    }
-    console.info("Server closed. Bye.");
+/**
+ * --------------------------------------------------
+ * Graceful Shutdown (Prisma v7 compatible)
+ * --------------------------------------------------
+ */
+const shutdown = async (signal: string) => {
+  console.log(`Received ${signal}. Shutting down...`);
+  await prisma.$disconnect();
+
+  server.close(() => {
     process.exit(0);
   });
 };
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
