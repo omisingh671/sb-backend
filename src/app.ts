@@ -16,6 +16,7 @@ import authRouter from "@/modules/auth/auth.routes.js";
 import usersRouter from "@/modules/users/users.routes.js";
 import { propertiesRouter } from "@/modules/properties/index.js";
 import { amenitiesRouter } from "@/modules/amenities/index.js";
+import { unitsRouter } from "@/modules/units/index.js";
 
 const API_PREFIX = env.API_PREFIX;
 
@@ -61,6 +62,7 @@ app.use(`${API_PREFIX}/auth`, authRouter);
 app.use(`${API_PREFIX}/users`, usersRouter);
 app.use(`${API_PREFIX}/properties`, propertiesRouter);
 app.use(`${API_PREFIX}/amenities`, amenitiesRouter);
+app.use(`${API_PREFIX}/units`, unitsRouter);
 
 /**
  * --------------------------------------------------
