@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { IdParams } from "@/common/types/params.js";
 import type { RoomProductCategory } from "@/generated/prisma/enums.js";
+import type { UpdateRoomProductInput } from "./room-products.inputs.js";
 
 import * as service from "./room-products.service.js";
 import { createRoomProductSchema, updateRoomProductSchema } from "./room-products.schema.js";
@@ -18,7 +19,12 @@ export const getById = async (req: Request<IdParams>, res: Response) => {
 
 export const update = async (req: Request<IdParams>, res: Response) => {
   const parsed = updateRoomProductSchema.parse(req.body);
-  const product = await service.updateRoomProduct(req.params.id, parsed);
+  const input: UpdateRoomProductInput = {};
+  if (parsed.name !== undefined) input.name = parsed.name;
+  if (parsed.occupancy !== undefined) input.occupancy = parsed.occupancy;
+  if (parsed.hasAC !== undefined) input.hasAC = parsed.hasAC;
+  if (parsed.category !== undefined) input.category = parsed.category;
+  const product = await service.updateRoomProduct(req.params.id, input);
   res.json({ success: true, data: product });
 };
 
