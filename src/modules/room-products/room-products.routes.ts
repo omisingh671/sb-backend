@@ -3,7 +3,7 @@ import { authenticate } from "@/common/middleware/auth.middleware.js";
 import { authorize } from "@/common/middleware/role.middleware.js";
 import { UserRole } from "@/generated/prisma/enums.js";
 
-import * as controller from "./rooms.controller.js";
+import * as controller from "./room-products.controller.js";
 
 const router = Router();
 
@@ -11,7 +11,7 @@ const router = Router();
 router.get("/", controller.list);
 router.get("/:id", controller.getById);
 
-// Protected routes
+// Admin/Manager routes
 router.post(
   "/",
   authenticate,
@@ -26,17 +26,10 @@ router.patch(
   controller.update as unknown as RequestHandler,
 );
 
-router.patch(
-  "/:id/active",
-  authenticate,
-  authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.setActive as unknown as RequestHandler,
-);
-
 router.delete(
   "/:id",
   authenticate,
-  authorize([UserRole.ADMIN]),
+  authorize([UserRole.ADMIN, UserRole.MANAGER]),
   controller.remove as unknown as RequestHandler,
 );
 

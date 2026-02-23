@@ -1,4 +1,4 @@
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import type { AuthRequest } from "@/common/middleware/auth.middleware.js";
 import type { IdParams } from "@/common/types/params.js";
 
@@ -31,7 +31,7 @@ export const list = async (req: AuthRequest, res: Response) => {
 /**
  * Get maintenance block by id
  */
-export const getById = async (req: AuthRequest<IdParams>, res: Response) => {
+export const getById = async (req: Request<IdParams>, res: Response) => {
   const block = await service.getBlockById(req.params.id);
   res.json({ success: true, data: block });
 };
@@ -61,7 +61,7 @@ export const create = async (req: AuthRequest, res: Response) => {
 /**
  * Update maintenance block
  */
-export const update = async (req: AuthRequest<IdParams>, res: Response) => {
+export const update = async (req: Request<IdParams>, res: Response) => {
   const parsed = updateBlockSchema.parse(req.body);
 
   const input = {
@@ -77,7 +77,7 @@ export const update = async (req: AuthRequest<IdParams>, res: Response) => {
 /**
  * Delete maintenance block
  */
-export const remove = async (req: AuthRequest<IdParams>, res: Response) => {
+export const remove = async (req: Request<IdParams>, res: Response) => {
   await service.deleteBlock(req.params.id);
   res.status(204).send();
 };

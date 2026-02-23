@@ -3,15 +3,18 @@ import { authenticate } from "@/common/middleware/auth.middleware.js";
 import { authorize } from "@/common/middleware/role.middleware.js";
 import { UserRole } from "@/generated/prisma/enums.js";
 
-import * as controller from "./rooms.controller.js";
+import * as controller from "./coupons.controller.js";
 
 const router = Router();
 
-// Public routes
+// Public route — must be before /:id
+router.post("/validate", controller.validate);
+
+// Public read routes
 router.get("/", controller.list);
 router.get("/:id", controller.getById);
 
-// Protected routes
+// Admin/Manager write routes
 router.post(
   "/",
   authenticate,
@@ -26,17 +29,10 @@ router.patch(
   controller.update as unknown as RequestHandler,
 );
 
-router.patch(
-  "/:id/active",
-  authenticate,
-  authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.setActive as unknown as RequestHandler,
-);
-
 router.delete(
   "/:id",
   authenticate,
-  authorize([UserRole.ADMIN]),
+  authorize([UserRole.ADMIN, UserRole.MANAGER]),
   controller.remove as unknown as RequestHandler,
 );
 
