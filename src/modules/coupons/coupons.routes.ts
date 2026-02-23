@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { authenticate } from "@/common/middleware/auth.middleware.js";
 import { authorize } from "@/common/middleware/role.middleware.js";
 import { UserRole } from "@/generated/prisma/enums.js";
@@ -26,14 +26,14 @@ router.patch(
   "/:id",
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.update,
+  controller.update as RequestHandler,
 );
 
 router.delete(
   "/:id",
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.remove,
+  controller.remove as RequestHandler,
 );
 
 export default router;

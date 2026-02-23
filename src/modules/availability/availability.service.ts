@@ -202,7 +202,7 @@ export const searchAvailability = async (
 
     const rooms = await repo.searchAvailableRooms({
       maxOccupancy,
-      hasAC: params.hasAC,
+      ...(params.hasAC !== undefined && { hasAC: params.hasAC }),
       excludeRoomIds,
       excludeUnitIds,
       checkIn: checkInDate,
