@@ -26,14 +26,14 @@ router.patch(
   "/:id",
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.update as RequestHandler,
+  controller.update as unknown as RequestHandler,
 );
 
 router.delete(
   "/:id",
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.remove as RequestHandler,
+  controller.remove as unknown as RequestHandler,
 );
 
 export default router;
