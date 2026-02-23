@@ -24,6 +24,11 @@ import { roomPricingRouter } from "@/modules/room-pricing/index.js";
 import { taxesRouter } from "@/modules/taxes/index.js";
 import { couponsRouter } from "@/modules/coupons/index.js";
 import { availabilityRouter } from "@/modules/availability/index.js";
+import { inventoryLocksRouter } from "@/modules/inventory-locks/index.js";
+import { bookingsRouter } from "@/modules/bookings/index.js";
+import { enquiriesRouter } from "@/modules/enquiries/index.js";
+import { quotesRouter } from "@/modules/quotes/index.js";
+import { dashboardRouter } from "@/modules/dashboard/index.js";
 
 const API_PREFIX = env.API_PREFIX;
 
@@ -77,6 +82,11 @@ app.use(`${API_PREFIX}/room-pricing`, roomPricingRouter);
 app.use(`${API_PREFIX}/taxes`, taxesRouter);
 app.use(`${API_PREFIX}/coupons`, couponsRouter);
 app.use(`${API_PREFIX}/availability`, availabilityRouter);
+app.use(`${API_PREFIX}/inventory-locks`, inventoryLocksRouter);
+app.use(`${API_PREFIX}/bookings`, bookingsRouter);
+app.use(`${API_PREFIX}/enquiries`, enquiriesRouter);
+app.use(`${API_PREFIX}/quotes`, quotesRouter);
+app.use(`${API_PREFIX}/dashboard`, dashboardRouter);
 
 /**
  * --------------------------------------------------

@@ -479,3 +479,22 @@ model Enquiry {
 
   @@map("enquiries")
 }
+
+model QuoteInquiry {
+  id                String   @id @default(uuid())
+  name              String
+  email             String
+  contactNumber     String
+  company           String?
+  guests            Int
+  bookingPreference String
+  checkIn           DateTime
+  checkOut          DateTime
+  notes             String?  @db.Text
+  status            String   @default("PENDING")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("quote_inquiries")
+}
