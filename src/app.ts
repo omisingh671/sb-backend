@@ -17,6 +17,8 @@ import usersRouter from "@/modules/users/users.routes.js";
 import { propertiesRouter } from "@/modules/properties/index.js";
 import { amenitiesRouter } from "@/modules/amenities/index.js";
 import { unitsRouter } from "@/modules/units/index.js";
+import { roomsRouter } from "@/modules/rooms/index.js";
+import { maintenanceBlocksRouter } from "@/modules/maintenance-blocks/index.js";
 
 const API_PREFIX = env.API_PREFIX;
 
@@ -63,6 +65,8 @@ app.use(`${API_PREFIX}/users`, usersRouter);
 app.use(`${API_PREFIX}/properties`, propertiesRouter);
 app.use(`${API_PREFIX}/amenities`, amenitiesRouter);
 app.use(`${API_PREFIX}/units`, unitsRouter);
+app.use(`${API_PREFIX}/rooms`, roomsRouter);
+app.use(`${API_PREFIX}/maintenance-blocks`, maintenanceBlocksRouter);
 
 /**
  * --------------------------------------------------
