@@ -32,6 +32,36 @@ enum RoomStatus {
   MAINTENANCE
 }
 
+enum RateType {
+  NIGHTLY
+  WEEKLY
+  MONTHLY
+}
+
+enum PricingTier {
+  STANDARD
+  CORPORATE
+  SEASONAL
+}
+
+enum BookingType {
+  ROOM
+  UNIT
+  MULTI_ROOM
+  LONG_STAY
+  CORPORATE
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum TaxType {
+  PERCENTAGE
+  FIXED
+}
+
 /**
  * =========================
  * USER & AUTH
@@ -129,10 +159,11 @@ model Unit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  property  Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  rooms     Room[]
-  pricing   RoomPricing[]
-  amenities UnitAmenity[]
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  rooms        Room[]
+  pricing      RoomPricing[]
+  amenities    UnitAmenity[]
+  bookingItems BookingItem[]
 
   @@unique([propertyId, unitNumber])
   @@index([propertyId])
@@ -148,6 +179,8 @@ model Room {
 
   isActive Boolean    @default(true)
   status   RoomStatus @default(ACTIVE)
+
+  bookingItems BookingItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,6 +230,11 @@ model RoomPricing {
   roomId    String?
   unitId    String?
   productId String
+  rateType     RateType    @default(NIGHTLY)
+  pricingTier  PricingTier @default(STANDARD)
+  minNights    Int         @default(1)
+  maxNights    Int?
+  taxInclusive Boolean     @default(false)
   price     Decimal
   validFrom DateTime
   validTo   DateTime?
@@ -217,7 +255,7 @@ model RoomPricing {
 
 model QuoteRequest {
   id         String            @id @default(uuid())
-  userId     String
+  userId     String?
   productId  String
   targetType BookingTargetType
   unitId     String?
@@ -231,7 +269,7 @@ model QuoteRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user    User        @relation(fields: [userId], references: [id], map: "fk_quote_user")
+  user    User?       @relation(fields: [userId], references: [id], map: "fk_quote_user")
   product RoomProduct @relation(fields: [productId], references: [id], map: "fk_quote_product")
 
   @@index([userId])
@@ -239,27 +277,131 @@ model QuoteRequest {
 }
 
 model Booking {
-  id         String            @id @default(uuid())
-  userId     String
-  productId  String
-  targetType BookingTargetType
-  unitId     String?
-  roomId     String?
+  id          String      @id @default(uuid())
+  bookingRef  String      @unique
+  userId      String
+  bookingType BookingType
 
-  targetLabel   String
-  productName   String
-  pricePerNight Decimal
+  guestName  String
+  guestEmail String
+  guestPhone String
 
-  checkIn     DateTime
-  checkOut    DateTime
-  status      String
-  totalAmount Decimal
-  createdAt   DateTime @default(now())
+  checkIn  DateTime
+  checkOut DateTime
+  nights   Int
+  guests   Int
 
-  user User @relation(fields: [userId], references: [id], map: "fk_booking_user")
+  subtotal       Decimal
+  taxAmount      Decimal @default(0)
+  discountAmount Decimal @default(0)
+  totalAmount    Decimal
+
+  couponId   String?
+  couponCode String?
+  notes      String?  @db.Text
+  status     String   @default("PENDING")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User          @relation(fields:[userId], references:[id], map:"fk_booking_user")
+  coupon Coupon?       @relation(fields:[couponId], references:[id], map:"fk_booking_coupon")
+  items  BookingItem[]
 
   @@index([userId])
+  @@index([status])
+  @@index([checkIn, checkOut])
   @@map("bookings")
+}
+
+model BookingItem {
+  id        String @id @default(uuid())
+  bookingId String
+
+  targetType String   // "ROOM" | "UNIT"
+  roomId     String?
+  unitId     String?
+
+  pricingId     String?
+  rateType      String
+  pricePerNight Decimal
+  nights        Int
+  subtotal      Decimal
+  label         String
+
+  booking Booking @relation(fields:[bookingId], references:[id], onDelete:Cascade, map:"fk_item_booking")
+  room    Room?   @relation(fields:[roomId], references:[id], map:"fk_item_room")
+  unit    Unit?   @relation(fields:[unitId], references:[id], map:"fk_item_unit")
+
+  @@index([bookingId])
+  @@map("booking_items")
+}
+
+model Tax {
+  id        String   @id @default(uuid())
+  name      String
+  rate      Decimal
+  taxType   TaxType  @default(PERCENTAGE)
+  appliesTo String   @default("ALL")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("taxes")
+}
+
+model Coupon {
+  id            String       @id @default(uuid())
+  code          String       @unique
+  name          String
+  discountType  DiscountType @default(PERCENTAGE)
+  discountValue Decimal
+  maxUses       Int?
+  usedCount     Int          @default(0)
+  minNights     Int?
+  minAmount     Decimal?
+  validFrom     DateTime
+  validTo       DateTime?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+
+  bookings Booking[]
+
+  @@map("coupons")
+}
+
+model InventoryLock {
+  id         String   @id @default(uuid())
+  sessionKey String   @unique
+  targetType String   // "ROOM" | "UNIT"
+  roomId     String?
+  unitId     String?
+  checkIn    DateTime
+  checkOut   DateTime
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([roomId])
+  @@index([unitId])
+  @@map("inventory_locks")
+}
+
+model MaintenanceBlock {
+  id         String   @id @default(uuid())
+  targetType String   // "ROOM" | "UNIT" | "PROPERTY"
+  roomId     String?
+  unitId     String?
+  propertyId String?
+  reason     String?
+  startDate  DateTime
+  endDate    DateTime
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([startDate, endDate])
+  @@map("maintenance_blocks")
 }
 
 /**
