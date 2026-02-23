@@ -23,21 +23,21 @@ router.patch(
   "/:id",
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.update as RequestHandler,
+  controller.update as unknown as RequestHandler,
 );
 
 router.patch(
   "/:id/active",
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  controller.setActive as RequestHandler,
+  controller.setActive as unknown as RequestHandler,
 );
 
 router.delete(
   "/:id",
   authenticate,
   authorize([UserRole.ADMIN]),
-  controller.remove as RequestHandler,
+  controller.remove as unknown as RequestHandler,
 );
 
 export default router;
