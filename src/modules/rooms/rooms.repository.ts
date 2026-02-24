@@ -38,7 +38,9 @@ const buildWhere = (filters: WhereFilters) => ({
 const roomInclude = {
   amenities: true,
   unit: {
-    include: {
+    select: {
+      unitNumber: true,
+      floor: true,
       property: {
         select: { name: true },
       },
