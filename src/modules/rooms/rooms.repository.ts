@@ -35,6 +35,17 @@ const buildWhere = (filters: WhereFilters) => ({
   ...(filters.isActive !== undefined && { isActive: filters.isActive }),
 });
 
+const roomInclude = {
+  amenities: true,
+  unit: {
+    include: {
+      property: {
+        select: { name: true },
+      },
+    },
+  },
+} as const;
+
 /* ----------------------------------
    Repository API
 ----------------------------------- */
@@ -53,14 +64,21 @@ export const createRoom = (data: {
 }) => {
   return prisma.room.create({
     data,
-    include: { amenities: true },
+    include: roomInclude,
   });
 };
 
 export const findRoomById = (id: string) => {
   return prisma.room.findUnique({
     where: { id },
-    include: { amenities: true },
+    include: roomInclude,
+  });
+};
+
+export const findActiveUnitById = (id: string) => {
+  return prisma.unit.findUnique({
+    where: { id },
+    select: { id: true, isActive: true },
   });
 };
 
@@ -78,6 +96,7 @@ export const updateRoomById = (
   return prisma.room.update({
     where: { id },
     data,
+    include: roomInclude,
   });
 };
 
@@ -107,7 +126,7 @@ export const listRooms = ({
     skip: (page - 1) * limit,
     take: limit,
     orderBy: { createdAt: "desc" },
-    include: { amenities: true },
+    include: roomInclude,
   });
 };
 
@@ -157,7 +176,7 @@ export const replaceRoomAmenities = async (
 
     return tx.room.findUnique({
       where: { id: roomId },
-      include: { amenities: true },
+      include: roomInclude,
     });
   });
 };

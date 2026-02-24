@@ -48,6 +48,7 @@ export const update = async (req: Request<IdParams>, res: Response) => {
     ...(parsed.hasAC !== undefined && { hasAC: parsed.hasAC }),
     ...(parsed.maxOccupancy !== undefined && { maxOccupancy: parsed.maxOccupancy }),
     ...(parsed.status !== undefined && { status: parsed.status }),
+    ...(parsed.isActive !== undefined && { isActive: parsed.isActive }),
     ...(parsed.amenityIds !== undefined && { amenityIds: parsed.amenityIds }),
   };
 

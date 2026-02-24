@@ -15,6 +15,7 @@ export interface UpdateRoomInput {
   hasAC?: boolean;
   maxOccupancy?: number;
   status?: RoomStatus;
+  isActive?: boolean;
   amenityIds?: string[];
 }
 
