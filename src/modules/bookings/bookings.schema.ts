@@ -19,6 +19,7 @@ export const createBookingSchema = z
     guests: z.number().int().min(1).max(20),
     couponCode: z.string().optional(),
     notes: z.string().max(500).optional(),
+    pricingTier: z.enum(["STANDARD", "CORPORATE", "SEASONAL"]).optional().default("STANDARD"),
   })
   .superRefine((data, ctx) => {
     if (Date.parse(data.checkOut) <= Date.parse(data.checkIn)) {
