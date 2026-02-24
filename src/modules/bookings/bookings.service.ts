@@ -18,21 +18,26 @@ export const createBooking = async (userId: string, input: CreateBookingInput) =
   await cleanExpiredLocks();
 
   // Step 1: validate all session locks exist and haven't expired
-  for (const key of input.sessionKeys) {
-    const lock = await prisma.inventoryLock.findUnique({ where: { sessionKey: key } });
-    if (!lock || lock.expiresAt < new Date()) {
-      throw new HttpError(
-        400,
-        "LOCK_EXPIRED",
-        "Your reservation expired. Please start again.",
-      );
-    }
+  const now = new Date();
+  const locks = await Promise.all(
+    input.sessionKeys.map((key) =>
+      prisma.inventoryLock.findUnique({ where: { sessionKey: key } }),
+    ),
+  );
+  const hasExpired = locks.some((lock) => !lock || lock.expiresAt < now);
+  if (hasExpired) {
+    throw new HttpError(
+      400,
+      "LOCK_EXPIRED",
+      "Your reservation expired. Please start again.",
+    );
   }
 
   // Step 2: calculate nights
   const checkIn = new Date(input.checkIn);
   const checkOut = new Date(input.checkOut);
   const nights = calculateNights(checkIn, checkOut);
+  const pricingTier = input.pricingTier ?? "STANDARD";
 
   // Step 3: determine bookingType
   // noUncheckedIndexedAccess: items has min(1) from schema so [0] is safe
@@ -63,7 +68,7 @@ export const createBooking = async (userId: string, input: CreateBookingInput) =
       }
 
       const rates = await pricingRepo.findActiveRatesForRoom(room.id, checkIn);
-      const { rate, requiresQuote } = selectRate(rates, nights, "STANDARD");
+      const { rate, requiresQuote } = selectRate(rates, nights, pricingTier);
 
       if (requiresQuote) {
         throw new HttpError(400, "REQUIRES_QUOTE", "This stay requires a custom quote");
@@ -111,7 +116,7 @@ export const createBooking = async (userId: string, input: CreateBookingInput) =
       }
 
       const rates = await pricingRepo.findActiveRatesForUnit(unit.id, checkIn);
-      const { rate, requiresQuote } = selectRate(rates, nights, "STANDARD");
+      const { rate, requiresQuote } = selectRate(rates, nights, pricingTier);
 
       if (requiresQuote) {
         throw new HttpError(400, "REQUIRES_QUOTE", "This stay requires a custom quote");

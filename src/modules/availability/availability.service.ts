@@ -37,10 +37,10 @@ export const selectRate = (
   // Step 3: Prefer WEEKLY rate when nights >= 7
   if (nights >= 7) {
     const weeklyRate = tieredRates.find((r) => r.rateType === "WEEKLY");
-    if (weeklyRate) {
-      if (weeklyRate.minNights > nights) return { rate: null, requiresQuote: false };
+    if (weeklyRate && weeklyRate.minNights <= nights) {
       return { rate: weeklyRate, requiresQuote: false };
     }
+    // weeklyRate exists but minNights not met → fall through to nightly
   }
 
   // Step 4: Fall back to NIGHTLY rate
@@ -83,7 +83,7 @@ export const buildRoomResult = (
   hasAC: room.hasAC,
   maxOccupancy: room.maxOccupancy,
   totalCapacity: room.maxOccupancy,
-  occupancyLabel: room.maxOccupancy === 1 ? "Single" : "Double",
+  occupancyLabel: room.maxOccupancy === 1 ? "Single" : room.maxOccupancy === 2 ? "Double" : "Group",
   rateType: rate.rateType as "NIGHTLY" | "WEEKLY",
   pricePerNight: Number(rate.price),
   nights,
@@ -243,18 +243,23 @@ export const searchAvailability = async (
       return [buildUnitResult(unit, rate, nights)];
     });
 
-    return {
-      checkIn: params.checkIn,
-      checkOut: params.checkOut,
-      nights,
-      occupancyType: params.occupancyType,
-      results: results.sort((a, b) => a.pricePerNight - b.pricePerNight),
-      taxes,
-      requiresQuote: false,
-      groupMode: false,
-      groupGuestsRequired: params.guests!,
-    };
+    // Only return normal mode if we actually have priced results.
+    // If all fitting units lack pricing, fall through to group mode.
+    if (results.length > 0) {
+      return {
+        checkIn: params.checkIn,
+        checkOut: params.checkOut,
+        nights,
+        occupancyType: params.occupancyType,
+        results: results.sort((a, b) => a.pricePerNight - b.pricePerNight),
+        taxes,
+        requiresQuote: false,
+        groupMode: false,
+        groupGuestsRequired: params.guests!,
+      };
+    }
   }
+  // Falls through to group mode below
 
   // Attempt 2: No single unit fits → GROUP MODE
   const [allUnits, allRooms] = await Promise.all([
