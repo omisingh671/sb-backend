@@ -201,6 +201,8 @@ model Room {
  */
 
 enum RoomProductCategory {
+  ROOM
+  UNIT
   NIGHTLY
   LONG_STAY
   CORPORATE

@@ -93,8 +93,11 @@ export const validateCoupon = async (
     throw new HttpError(400, "COUPON_INACTIVE", "Coupon is inactive");
   }
 
-  // 3. Check expiry
+  // 3. Check validity window
   const now = new Date();
+  if (now < coupon.validFrom) {
+    throw new HttpError(400, "COUPON_NOT_YET_VALID", "Coupon is not yet valid");
+  }
   if (coupon.validTo && now > coupon.validTo) {
     throw new HttpError(400, "COUPON_EXPIRED", "Coupon has expired");
   }
