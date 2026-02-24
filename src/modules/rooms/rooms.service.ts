@@ -13,6 +13,13 @@ import * as repo from "./rooms.repository.js";
 const mapRoom = (r: any): RoomDTO => ({
   id: r.id,
   unitId: r.unitId,
+  unit: {
+    unitNumber: r.unit.unitNumber,
+    floor: r.unit.floor,
+    property: {
+      name: r.unit.property.name,
+    },
+  },
   roomNumber: r.roomNumber,
   hasAC: r.hasAC,
   maxOccupancy: r.maxOccupancy,
@@ -73,38 +80,46 @@ export const updateRoom = async (
   data: UpdateRoomInput,
 ): Promise<RoomDTO> => {
   try {
-    const existing = await repo.findRoomById(id);
+    if (data.unitId !== undefined) {
+      const unit = await repo.findActiveUnitById(data.unitId);
 
-    if (!existing) {
-      throw new HttpError(404, "NOT_FOUND", "Room not found");
+      if (!unit) {
+        throw new HttpError(422, "UNIT_NOT_FOUND", "Unit not found");
+      }
+
+      if (!unit.isActive) {
+        throw new HttpError(422, "UNIT_INACTIVE", "Unit is not active");
+      }
     }
 
-    await repo.updateRoomById(id, {
+    if (data.amenityIds !== undefined && data.amenityIds.length > 0) {
+      const validCount = await repo.countActiveAmenitiesByIds(data.amenityIds);
+
+      if (validCount !== data.amenityIds.length) {
+        throw new HttpError(
+          400,
+          "INVALID_AMENITY",
+          "One or more amenities are invalid or inactive",
+        );
+      }
+    }
+
+    const fields = {
       ...(data.unitId !== undefined && { unitId: data.unitId }),
       ...(data.roomNumber !== undefined && { roomNumber: data.roomNumber }),
       ...(data.hasAC !== undefined && { hasAC: data.hasAC }),
       ...(data.maxOccupancy !== undefined && { maxOccupancy: data.maxOccupancy }),
       ...(data.status !== undefined && { status: data.status }),
-    });
+      ...(data.isActive !== undefined && { isActive: data.isActive }),
+    };
 
     let room;
 
     if (data.amenityIds !== undefined) {
-      if (data.amenityIds.length > 0) {
-        const validCount = await repo.countActiveAmenitiesByIds(data.amenityIds);
-
-        if (validCount !== data.amenityIds.length) {
-          throw new HttpError(
-            400,
-            "INVALID_AMENITY",
-            "One or more amenities are invalid or inactive",
-          );
-        }
-      }
-
+      await repo.updateRoomById(id, fields);
       room = await repo.replaceRoomAmenities(id, data.amenityIds);
     } else {
-      room = await repo.findRoomById(id);
+      room = await repo.updateRoomById(id, fields);
     }
 
     if (!room) {
@@ -113,15 +128,17 @@ export const updateRoom = async (
 
     return mapRoom(room);
   } catch (err) {
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === "P2002"
-    ) {
-      throw new HttpError(
-        409,
-        "ROOM_EXISTS",
-        "A room with this number already exists for this unit",
-      );
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === "P2002") {
+        throw new HttpError(
+          409,
+          "ROOM_EXISTS",
+          "A room with this number already exists for this unit",
+        );
+      }
+      if (err.code === "P2025") {
+        throw new HttpError(404, "NOT_FOUND", "Room not found");
+      }
     }
 
     throw err;
@@ -138,13 +155,7 @@ export const setRoomActive = async (
     throw new HttpError(404, "NOT_FOUND", "Room not found");
   }
 
-  await repo.updateRoomById(id, { isActive });
-
-  const room = await repo.findRoomById(id);
-
-  if (!room) {
-    throw new HttpError(404, "NOT_FOUND", "Room not found");
-  }
+  const room = await repo.updateRoomById(id, { isActive });
 
   return mapRoom(room);
 };
