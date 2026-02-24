@@ -15,7 +15,9 @@ export const createRoomSchema = z.object({
   amenityIds: z.array(z.string().uuid()).optional(),
 });
 
-export const updateRoomSchema = createRoomSchema.partial();
+export const updateRoomSchema = createRoomSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
 
 export const toggleActiveSchema = z.object({
   isActive: z.boolean(),
