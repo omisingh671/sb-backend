@@ -48,4 +48,4 @@ export const createRoomPricingSchema = roomPricingBaseSchema.superRefine((data, 
   }
 });
 
-export const updateRoomPricingSchema = roomPricingBaseSchema.partial();
+export const updateRoomPricingSchema = createRoomPricingSchema.partial();
