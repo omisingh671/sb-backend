@@ -10,7 +10,7 @@ import {
 
 export const create = async (req: Request, res: Response) => {
   const parsed = createCouponSchema.parse(req.body);
-  const coupon = await service.createCoupon(parsed as any);
+  const coupon = await service.createCoupon(parsed);
   res.status(201).json({ success: true, data: coupon });
 };
 
@@ -21,7 +21,7 @@ export const getById = async (req: Request<IdParams>, res: Response) => {
 
 export const update = async (req: Request<IdParams>, res: Response) => {
   const parsed = updateCouponSchema.parse(req.body);
-  const coupon = await service.updateCoupon(req.params.id, parsed as any);
+  const coupon = await service.updateCoupon(req.params.id, parsed);
   res.json({ success: true, data: coupon });
 };
 

@@ -6,7 +6,7 @@ import { createTaxSchema, updateTaxSchema } from "./taxes.schema.js";
 
 export const create = async (req: Request, res: Response) => {
   const parsed = createTaxSchema.parse(req.body);
-  const tax = await service.createTax(parsed as any);
+  const tax = await service.createTax(parsed);
   res.status(201).json({ success: true, data: tax });
 };
 
@@ -17,7 +17,7 @@ export const getById = async (req: Request<IdParams>, res: Response) => {
 
 export const update = async (req: Request<IdParams>, res: Response) => {
   const parsed = updateTaxSchema.parse(req.body);
-  const tax = await service.updateTax(req.params.id, parsed as any);
+  const tax = await service.updateTax(req.params.id, parsed);
   res.json({ success: true, data: tax });
 };
 
