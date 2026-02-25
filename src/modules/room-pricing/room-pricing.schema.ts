@@ -48,4 +48,26 @@ export const createRoomPricingSchema = roomPricingBaseSchema.superRefine((data, 
   }
 });
 
-export const updateRoomPricingSchema = createRoomPricingSchema.partial();
+export const updateRoomPricingSchema = roomPricingBaseSchema.partial().superRefine((data, ctx) => {
+  if (data.roomId && data.unitId) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Provide only one of roomId or unitId",
+      path: ["unitId"],
+    });
+  }
+  if (data.validTo && data.validFrom && Date.parse(data.validTo) <= Date.parse(data.validFrom)) {
+    ctx.addIssue({
+      code: "custom",
+      message: "validTo must be after validFrom",
+      path: ["validTo"],
+    });
+  }
+  if (data.maxNights !== undefined && data.minNights !== undefined && data.maxNights < data.minNights) {
+    ctx.addIssue({
+      code: "custom",
+      message: "maxNights must be >= minNights",
+      path: ["maxNights"],
+    });
+  }
+});
