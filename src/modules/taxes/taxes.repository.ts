@@ -20,7 +20,16 @@ export const findTaxById = (id: string) => {
 };
 
 export const updateTaxById = (id: string, data: UpdateTaxInput) => {
-  return prisma.tax.update({ where: { id }, data });
+  return prisma.tax.update({
+    where: { id },
+    data: {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.rate !== undefined && { rate: data.rate }),
+      ...(data.taxType !== undefined && { taxType: data.taxType }),
+      ...(data.appliesTo !== undefined && { appliesTo: data.appliesTo }),
+      ...(data.isActive !== undefined && { isActive: data.isActive }),
+    },
+  });
 };
 
 export const deleteTaxById = (id: string) => {

@@ -7,8 +7,12 @@ export type CreateTaxInput = {
   appliesTo: string;
 };
 
-export type UpdateTaxInput = Partial<CreateTaxInput> & {
-  isActive?: boolean;
+export type UpdateTaxInput = {
+  name?: string | undefined;
+  rate?: number | undefined;
+  taxType?: TaxType | undefined;
+  appliesTo?: string | undefined;
+  isActive?: boolean | undefined;
 };
 
 export type ListTaxesFilters = {

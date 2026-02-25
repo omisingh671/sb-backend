@@ -10,7 +10,7 @@ import {
 
 export const create = async (req: Request, res: Response) => {
   const parsed = createRoomPricingSchema.parse(req.body);
-  const pricing = await service.createRoomPricing(parsed as any);
+  const pricing = await service.createRoomPricing(parsed);
   res.status(201).json({ success: true, data: pricing });
 };
 
@@ -21,7 +21,7 @@ export const getById = async (req: Request<IdParams>, res: Response) => {
 
 export const update = async (req: Request<IdParams>, res: Response) => {
   const parsed = updateRoomPricingSchema.parse(req.body);
-  const pricing = await service.updateRoomPricing(req.params.id, parsed as any);
+  const pricing = await service.updateRoomPricing(req.params.id, parsed);
   res.json({ success: true, data: pricing });
 };
 
