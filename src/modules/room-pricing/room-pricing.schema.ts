@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// Refinement-free base — safe for .partial() in Zod v4
 const roomPricingBaseSchema = z.object({
   productId: z.string().uuid(),
   roomId: z.string().uuid().optional(),
@@ -10,14 +11,17 @@ const roomPricingBaseSchema = z.object({
   maxNights: z.number().int().optional(),
   price: z.number().positive(),
   taxInclusive: z.boolean().default(false),
-  validFrom: z.string().refine((v) => !isNaN(Date.parse(v))),
-  validTo: z
-    .string()
-    .optional()
-    .refine((v) => !v || !isNaN(Date.parse(v))),
+  validFrom: z.string(),
+  validTo: z.string().optional(),
 });
 
 export const createRoomPricingSchema = roomPricingBaseSchema.superRefine((data, ctx) => {
+  if (isNaN(Date.parse(data.validFrom))) {
+    ctx.addIssue({ code: "custom", message: "Invalid date", path: ["validFrom"] });
+  }
+  if (data.validTo && isNaN(Date.parse(data.validTo))) {
+    ctx.addIssue({ code: "custom", message: "Invalid date", path: ["validTo"] });
+  }
   if (!data.roomId && !data.unitId) {
     ctx.addIssue({
       code: "custom",
@@ -49,6 +53,12 @@ export const createRoomPricingSchema = roomPricingBaseSchema.superRefine((data, 
 });
 
 export const updateRoomPricingSchema = roomPricingBaseSchema.partial().superRefine((data, ctx) => {
+  if (data.validFrom && isNaN(Date.parse(data.validFrom))) {
+    ctx.addIssue({ code: "custom", message: "Invalid date", path: ["validFrom"] });
+  }
+  if (data.validTo && isNaN(Date.parse(data.validTo))) {
+    ctx.addIssue({ code: "custom", message: "Invalid date", path: ["validTo"] });
+  }
   if (data.roomId && data.unitId) {
     ctx.addIssue({
       code: "custom",
